@@ -45,6 +45,12 @@ x = []
 y = []
 fig, ax = plt.subplots()
 
+def plot_line_bw_nodes(ax, pos, id0, id1, *args, **kwargs):
+        ax.plot([pos[id0, 0], pos[id1, 0]],
+                [pos[id0, 1], pos[id1, 1]],
+                *args, **kwargs)
+
+
 def animate(i):
     global x, y, ax
 
@@ -52,6 +58,7 @@ def animate(i):
     positions = states[curr_time]['positions']
     sinks = states[curr_time]['sinks']
     sources = states[curr_time]['sources']
+    assert len(sinks) == len(sources)
 
     x = positions[:, 0]
     y = positions[:, 1]
@@ -60,10 +67,15 @@ def animate(i):
     ax.scatter(x, y)
     ax.scatter(x[sinks], y[sinks], label="Sinks")
     ax.scatter(x[sources], y[sources], label="Sources")
+
+    # Connection lines
+    for j in range(len(sinks)):
+        plot_line_bw_nodes(ax, positions, sources[j], sinks[j], 'k', alpha=0.2)
+
     ax.set_xlim(0, 300)
     ax.set_ylim(0, 1500)
     ax.set_title(f"Time: {curr_time}s")
-    ax.legend()
+    ax.legend(loc='upper right')
 
 ani = FuncAnimation(fig, animate, frames=len(time_list), interval=100, repeat=False)
 plt.show()
