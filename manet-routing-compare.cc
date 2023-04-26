@@ -213,6 +213,7 @@ void RoutingExperiment::WriteSimState()
     std::ofstream outfile(stateFname, std::ios_base::app);
     outfile << "TIME " << time << std::endl;
     outfile << "NUM_NODES " << numNodes << std::endl;
+    outfile << "NUM_SINKS " << m_nSinks << std::endl;
     outfile << "POSITIONS" << std::endl;
     for (int i = 0; i < numNodes; i++)
     {
