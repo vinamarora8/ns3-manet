@@ -347,8 +347,8 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
 
     ObjectFactory pos;
     pos.SetTypeId("ns3::RandomRectanglePositionAllocator");
-    pos.Set("X", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=300.0]"));
-    pos.Set("Y", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1500.0]"));
+    pos.Set("X", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1000.0]"));
+    pos.Set("Y", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1000.0]"));
 
     Ptr<PositionAllocator> taPositionAlloc = pos.Create()->GetObject<PositionAllocator>();
     streamIndex += taPositionAlloc->AssignStreams(streamIndex);
@@ -356,7 +356,7 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     std::stringstream ssSpeed;
     ssSpeed << "ns3::UniformRandomVariable[Min=10.0|Max=20.0]";
     std::stringstream ssPause;
-    ssPause << "ns3::UniformRandomVariable[Min=0.0|Max=10.0]";
+    ssPause << "ns3::UniformRandomVariable[Min=0.0|Max=20.0]";
     mobilityAdhoc.SetMobilityModel("ns3::RandomWaypointMobilityModel",
                                    "Speed",
                                    StringValue(ssSpeed.str()),
