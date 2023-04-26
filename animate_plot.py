@@ -79,7 +79,7 @@ def animate(i):
     t = range(len(x[sinks]))
 
     ax.clear()
-    ax.scatter(x, y, c='k', s=10)
+    ax.scatter(x, y, c='k', s=15)
     ax.scatter(x[sinks], y[sinks], c=cmap(t))
     ax.scatter(x[sources], y[sources], c=cmap(t))
 
