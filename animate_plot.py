@@ -8,8 +8,8 @@ route_fname = "manet-rtable.txt"
 states = {}
 
 def get_state_prop(line, tag):
-    assert lines[i].startswith(tag)
-    return float(lines[i].split(' ')[1])
+    assert line.startswith(tag)
+    return float(line.split(' ')[1])
 
 # Populate states
 with open(state_fname, 'r') as file:
