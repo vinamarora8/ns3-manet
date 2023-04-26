@@ -6,32 +6,34 @@ from typing import Dict, Any
 from matplotlib.colors import ListedColormap
 from routing import Routing
 
-fname = "manet-state.txt"
+state_fname = "manet-state.txt"
 route_fname = "manet-rtable.txt"
 states = {}
-with open(fname, 'r') as file:
+
+def get_state_prop(line, tag):
+    assert lines[i].startswith(tag)
+    return float(lines[i].split(' ')[1])
+
+# Populate states
+with open(state_fname, 'r') as file:
     lines = file.readlines()
     
     i = 0
     while i < len(lines):
-        assert lines[i].startswith('TIME')
-        curr_time = float(lines[i].split(' ')[1])
+        curr_time = int(get_state_prop(lines[i], 'TIME'))
         states[curr_time] = {}
         i+=1
 
-        assert lines[i].startswith('NUM_NODES')
-        num_nodes = int(lines[i].split(' ')[1])
+        num_nodes = int(get_state_prop(lines[i], 'NUM_NODES'))
         states[curr_time]['positions'] = np.zeros((num_nodes, 3))
         i+=1
 
-        assert lines[i].startswith('NUM_SINKS')
-        num_sinks = int(lines[i].split(' ')[1])
+        num_sinks = int(get_state_prop(lines[i], 'NUM_SINKS'))
         states[curr_time]['sinks'] = np.arange(num_sinks)
         states[curr_time]['sources'] = np.arange(num_sinks) + num_sinks
         i+=1
 
-        assert lines[i].startswith('THROUGHPUT')
-        throughput = float(lines[i].split(' ')[1])
+        throughput = float(get_state_prop(lines[i], 'THROUGHPUT'))
         states[curr_time]['throughput'] = throughput
         i+=1
 
@@ -92,11 +94,9 @@ def animate(i):
         else:
             plot_line_bw_nodes(ax, positions, sources[j], sinks[j], 'k:', alpha=0.2)
 
-
     ax.set_xlim(0, 300)
     ax.set_ylim(0, 1500)
     ax.set_title(f"Time: {curr_time}s, Throughput: {states[curr_time]['throughput']:.2f}KBPS")
-    #ax.legend(loc='upper right')
 
 ani = FuncAnimation(fig, animate, frames=len(time_list), interval=100, repeat=False)
 plt.show()
