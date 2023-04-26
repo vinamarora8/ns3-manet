@@ -1,5 +1,6 @@
 import numpy as np
 import re
+import traceback
 
 class Routing():
 
@@ -18,7 +19,7 @@ class Routing():
         return b[3] - 1
 
 
-    def __init__(self, numNodes, fname, start=0):
+    def __init__(self, numNodes, fname, time):
         """Read a complete routing table starting from line number `start`
         Length of the routing table is given by `numNodes`
         """
@@ -29,14 +30,20 @@ class Routing():
         with open(fname, 'r') as f:
             lines = [x.strip() for x in f.readlines()]
 
-        i = start
+        i = 0
+        started = lines[i].startswith('Node') and int(re.findall(r'[0-9]+', lines[i])[1]) == time
+        while not started:
+            i+=1
+            started = lines[i].startswith('Node') and int(re.findall(r'[0-9]+', lines[i])[1]) == time
+
         nodesSeen = 0
         while i < len(lines) and nodesSeen < numNodes:
             assert lines[i].startswith('Node')
             nodeid = int(re.findall(r'[0-9]+', lines[i])[0])
+            time_this = int(re.findall(r'[0-9]+', lines[i])[1])
+            assert time_this == time, f'{nodeid}: {time_this} != {time}'
             nodesSeen += 1
             self.routes[nodeid] = {}
-            print(nodeid)
             i+=1
 
             while not lines[i].startswith('Destination'):
@@ -54,7 +61,7 @@ class Routing():
                 gate = self.ip_to_node(split[1])
                 hops = int(split[-1])
                 #print(split, len(lines[i]), dest, gate)
-                if dest:
+                if dest is not False and gate is not False:
                     self.routes[nodeid][dest] = {
                         'path':[dest],
                         'gate':gate,
@@ -71,7 +78,15 @@ class Routing():
             return None
         route = [src]
         for i in range(self.routes[src][dest]['hops']):
-            gate = self.routes[src][dest]['gate']
+            if src == dest:
+                return route
+            try:
+                gate = self.routes[src][dest]['gate']
+            except KeyError as e:
+                traceback.print_exc()
+                print(src, dest)
+                print(self.routes)
+                
             route += [gate]
             src = gate
             dest = dest
@@ -80,16 +95,10 @@ class Routing():
 
 
 if __name__ == "__main__":
-    r = Routing(10, "rtable.txt", start=0)
-    print(r.lastline)
+    r = Routing(5, "manet-rtable.txt", time=110)
     print(r.routes)
-    print(r.get_route(0, 2))
-    print(r.get_route(5, 2))
-    print(r.get_route(2, 0))
+    print(r.get_route(1, 0))
 
-    r = Routing(10, "rtable.txt", start=r.lastline)
-    print(r.lastline)
+    r = Routing(5, "manet-rtable.txt", time=137)
     print(r.routes)
-    print(r.get_route(0, 2))
-    print(r.get_route(5, 2))
-    print(r.get_route(2, 0))
+    print(r.get_route(1, 0))

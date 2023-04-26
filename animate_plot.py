@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from typing import Dict, Any
 from matplotlib.colors import ListedColormap
+from routing import Routing
 
 fname = "manet-state.txt"
+route_fname = "manet-rtable.txt"
 states = {}
 with open(fname, 'r') as file:
     lines = file.readlines()
@@ -46,16 +48,24 @@ y = []
 fig, ax = plt.subplots()
 
 def plot_line_bw_nodes(ax, pos, id0, id1, *args, **kwargs):
-        ax.plot([pos[id0, 0], pos[id1, 0]],
-                [pos[id0, 1], pos[id1, 1]],
-                *args, **kwargs)
+    ax.plot([pos[id0, 0], pos[id1, 0]],
+            [pos[id0, 1], pos[id1, 1]],
+            *args, **kwargs)
 
+def plot_route(ax, pos, route, *args, **kwargs):
+    if route is None:
+        return
+    
+    assert len(route) >= 2
+    for i in range(len(route) - 1):
+        plot_line_bw_nodes(ax, pos, route[i], route[i+1], *args, **kwargs)
 
 def animate(i):
     global x, y, ax
 
     curr_time = time_list[i]
     positions = states[curr_time]['positions']
+    num_nodes = len(positions)
     sinks = states[curr_time]['sinks']
     sources = states[curr_time]['sources']
     assert len(sinks) == len(sources)
@@ -68,9 +78,17 @@ def animate(i):
     ax.scatter(x[sinks], y[sinks], label="Sinks")
     ax.scatter(x[sources], y[sources], label="Sources")
 
-    # Connection lines
-    for j in range(len(sinks)):
-        plot_line_bw_nodes(ax, positions, sources[j], sinks[j], 'k', alpha=0.2)
+
+    # Route lines
+    r = Routing(num_nodes, route_fname, time=int(curr_time))
+    cmap = plt.get_cmap('hsv', len(sources)+4)
+    for j in range(len(sources)):
+        route = r.get_route(sources[j], sinks[j])
+        if route is not None:
+            plot_route(ax, positions, route, c=cmap(j))
+        else:
+            plot_line_bw_nodes(ax, positions, sources[j], sinks[j], 'k:', alpha=0.2)
+
 
     ax.set_xlim(0, 300)
     ax.set_ylim(0, 1500)

@@ -284,7 +284,7 @@ main(int argc, char* argv[])
         << "TransmissionPower" << std::endl;
     out.close();
 
-    double txp = 7.5;
+    double txp = 2*7.5;
 
     experiment.Run(txp, CSVfileName);
 
