@@ -1,4 +1,3 @@
-import numpy as np
 import re
 import traceback
 
@@ -26,6 +25,7 @@ class Routing():
         self.numNodes = numNodes
         self.fname = fname
         self.routes = {}
+        self.time = time
 
         with open(fname, 'r') as f:
             lines = [x.strip() for x in f.readlines()]
@@ -57,6 +57,9 @@ class Routing():
                 if split[3] == 'IN_SEARCH':
                     continue
 
+                if split[3] == 'DOWN':
+                    continue
+
                 dest = self.ip_to_node(split[0])
                 gate = self.ip_to_node(split[1])
                 hops = int(split[-1])
@@ -76,16 +79,23 @@ class Routing():
     def get_route(self, src, dest):
         if dest not in self.routes[src]:
             return None
+        src_orig = src
+        dest_orig = dest
         route = [src]
-        for i in range(self.routes[src][dest]['hops']):
-            if src == dest:
+        while route[-1] != dest_orig:
+            if route[-1] == dest:
                 return route
             try:
                 gate = self.routes[src][dest]['gate']
-            except KeyError as e:
+            except KeyError:
+                '''
                 traceback.print_exc()
-                print(src, dest)
-                print(self.routes)
+                print(self.time)
+                print(src_orig, src, dest)
+                print(self.routes[src_orig])
+                print(self.routes[src])
+                '''
+                return None
                 
             route += [gate]
             src = gate

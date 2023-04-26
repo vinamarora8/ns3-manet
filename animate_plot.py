@@ -53,9 +53,6 @@ def plot_line_bw_nodes(ax, pos, id0, id1, *args, **kwargs):
             *args, **kwargs)
 
 def plot_route(ax, pos, route, *args, **kwargs):
-    if route is None:
-        return
-    
     assert len(route) >= 2
     for i in range(len(route) - 1):
         plot_line_bw_nodes(ax, pos, route[i], route[i+1], *args, **kwargs)
@@ -73,15 +70,16 @@ def animate(i):
     x = positions[:, 0]
     y = positions[:, 1]
 
-    ax.clear()
-    ax.scatter(x, y)
-    ax.scatter(x[sinks], y[sinks], label="Sinks")
-    ax.scatter(x[sources], y[sources], label="Sources")
+    cmap = plt.get_cmap('tab20', len(sources)+4)
+    t = range(len(x[sinks]))
 
+    ax.clear()
+    ax.scatter(x, y, c='k', s=10)
+    ax.scatter(x[sinks], y[sinks], c=cmap(t))
+    ax.scatter(x[sources], y[sources], c=cmap(t))
 
     # Route lines
     r = Routing(num_nodes, route_fname, time=int(curr_time))
-    cmap = plt.get_cmap('hsv', len(sources)+4)
     for j in range(len(sources)):
         route = r.get_route(sources[j], sinks[j])
         if route is not None:
@@ -93,7 +91,7 @@ def animate(i):
     ax.set_xlim(0, 300)
     ax.set_ylim(0, 1500)
     ax.set_title(f"Time: {curr_time}s")
-    ax.legend(loc='upper right')
+    #ax.legend(loc='upper right')
 
 ani = FuncAnimation(fig, animate, frames=len(time_list), interval=100, repeat=False)
 plt.show()
