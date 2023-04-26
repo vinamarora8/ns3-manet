@@ -77,12 +77,19 @@ class Routing():
         self.lastline = i
 
     def get_route(self, src, dest):
+        if dest not in self.routes[src]:
+            return None
         src_orig = src
         dest_orig = dest
         route = [src]
+        hops = self.routes[src][dest]['hops']
         while route[-1] != dest:
             if dest not in self.routes[src]:
                 return None
+
+            if hops <= 0:
+                return None
+            hops -= 1
 
             gate = self.routes[src][dest]['gate']
             route += [gate]
