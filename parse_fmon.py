@@ -88,17 +88,22 @@ def averageDelay(stats, cond=lambda v: True):
         totDelay += v['delaySum']
     return totDelay / totRxPackets
 
-
-if __name__ == "__main__":
-    import sys, os
-
-    cmd = f'./ns3 run "scratch/project/manet-routing-compare.cc --nSinks={sys.argv[1]}"'
+def run(nSinks, nWifi):
+    cmd = f'./ns3 run "scratch/project/manet-routing-compare.cc --nSinks={nSinks} --nWifi={nWifi}"'
     print(cmd)
     os.system(cmd)
 
     fname = 'manet-routing-compare.flowmon'
     stats = prep_stats(fname)
-    cond = lambda v: v['txPackets'] > 300
+    return stats
+
+
+if __name__ == "__main__":
+    import sys, os
+
+
+    stats = run(sys.argv[1], sys.argv[2])
+    cond = lambda v: v['txPackets'] > 100
     print_stats(stats, cond)
     loss_rate = lossRate(stats, cond)
     avg_delay = averageDelay(stats, cond)
