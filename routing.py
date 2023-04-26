@@ -77,26 +77,14 @@ class Routing():
         self.lastline = i
 
     def get_route(self, src, dest):
-        if dest not in self.routes[src]:
-            return None
         src_orig = src
         dest_orig = dest
         route = [src]
-        while route[-1] != dest_orig:
-            if route[-1] == dest:
-                return route
-            try:
-                gate = self.routes[src][dest]['gate']
-            except KeyError:
-                '''
-                traceback.print_exc()
-                print(self.time)
-                print(src_orig, src, dest)
-                print(self.routes[src_orig])
-                print(self.routes[src])
-                '''
+        while route[-1] != dest:
+            if dest not in self.routes[src]:
                 return None
-                
+
+            gate = self.routes[src][dest]['gate']
             route += [gate]
             src = gate
             dest = dest
