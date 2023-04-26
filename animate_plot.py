@@ -30,6 +30,11 @@ with open(fname, 'r') as file:
         states[curr_time]['sources'] = np.arange(num_sinks) + num_sinks
         i+=1
 
+        assert lines[i].startswith('THROUGHPUT')
+        throughput = float(lines[i].split(' ')[1])
+        states[curr_time]['throughput'] = throughput
+        i+=1
+
         assert lines[i].startswith('POSITIONS')
         i+=1
 
@@ -90,7 +95,7 @@ def animate(i):
 
     ax.set_xlim(0, 300)
     ax.set_ylim(0, 1500)
-    ax.set_title(f"Time: {curr_time}s")
+    ax.set_title(f"Time: {curr_time}s, Throughput: {states[curr_time]['throughput']:.2f}KBPS")
     #ax.legend(loc='upper right')
 
 ani = FuncAnimation(fig, animate, frames=len(time_list), interval=100, repeat=False)

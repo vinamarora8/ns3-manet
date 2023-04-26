@@ -144,6 +144,7 @@ class RoutingExperiment
     uint32_t m_protocol;        //!< Protocol type.
     NodeContainer adhocNodes;
     std::string stateFname;
+    double kbs;
 };
 
 RoutingExperiment::RoutingExperiment()
@@ -155,7 +156,8 @@ RoutingExperiment::RoutingExperiment()
       m_nWifi(50),
       m_traceMobility(false),
       m_protocol(2), // AODV
-      stateFname("manet-state.txt")
+      stateFname("manet-state.txt"),
+      kbs(0.0)
 {
 }
 
@@ -214,6 +216,7 @@ void RoutingExperiment::WriteSimState()
     outfile << "TIME " << time << std::endl;
     outfile << "NUM_NODES " << numNodes << std::endl;
     outfile << "NUM_SINKS " << m_nSinks << std::endl;
+    outfile << "THROUGHPUT " << kbs << std::endl;
     outfile << "POSITIONS" << std::endl;
     for (int i = 0; i < numNodes; i++)
     {
@@ -223,11 +226,12 @@ void RoutingExperiment::WriteSimState()
     outfile.close();
 }
 
+
 void
 RoutingExperiment::CheckThroughput()
 {
     //WriteSimState();
-    double kbs = (bytesTotal * 8.0) / 1000;
+    kbs = (bytesTotal * 8.0) / 1000;
     bytesTotal = 0;
 
     std::ofstream out(m_CSVfileName, std::ios::app);
