@@ -1,9 +1,6 @@
-from random import randint
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-from typing import Dict, Any
-from matplotlib.colors import ListedColormap
 from routing import Routing
 
 state_fname = "manet-state.txt"
