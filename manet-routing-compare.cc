@@ -74,6 +74,7 @@
 #include "ns3/network-module.h"
 #include "ns3/olsr-module.h"
 #include "ns3/yans-wifi-helper.h"
+#include "ns3/flow-monitor-helper.h"
 
 #include <fstream>
 #include <iostream>
@@ -130,6 +131,7 @@ class RoutingExperiment
     uint32_t port;            //!< Receiving port number.
     uint32_t bytesTotal;      //!< Total received bytes.
     uint32_t packetsReceived; //!< Total received packets.
+    uint32_t totPacketsReceived; //!< Total received packets.
 
     std::string m_CSVfileName;  //!< CSV filename.
     int m_nSinks;               //!< Number of sink nodes.
@@ -143,6 +145,7 @@ RoutingExperiment::RoutingExperiment()
     : port(9),
       bytesTotal(0),
       packetsReceived(0),
+      totPacketsReceived(0),
       m_CSVfileName("manet-routing.output.csv"),
       m_traceMobility(false),
       m_protocol(2) // AODV
@@ -177,7 +180,8 @@ RoutingExperiment::ReceivePacket(Ptr<Socket> socket)
     {
         bytesTotal += packet->GetSize();
         packetsReceived += 1;
-        NS_LOG_UNCOND(PrintReceivedPacket(socket, packet, senderAddress));
+        totPacketsReceived += 1;
+        //NS_LOG_UNCOND(PrintReceivedPacket(socket, packet, senderAddress));
     }
 }
 
@@ -216,6 +220,7 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
     cmd.AddValue("CSVfileName", "The name of the CSV output file name", m_CSVfileName);
     cmd.AddValue("traceMobility", "Enable mobility tracing", m_traceMobility);
     cmd.AddValue("protocol", "1=OLSR;2=AODV;3=DSDV;4=DSR", m_protocol);
+    cmd.AddValue("nSinks", "Number of sink nodes", m_nSinks);
     cmd.Parse(argc, argv);
     return m_CSVfileName;
 }
@@ -236,7 +241,7 @@ main(int argc, char* argv[])
         << "TransmissionPower" << std::endl;
     out.close();
 
-    int nSinks = 10;
+    int nSinks = 3;
     double txp = 7.5;
 
     experiment.Run(nSinks, txp, CSVfileName);
@@ -248,7 +253,8 @@ void
 RoutingExperiment::Run(int nSinks, double txp, std::string CSVfileName)
 {
     Packet::EnablePrinting();
-    m_nSinks = nSinks;
+    //m_nSinks = nSinks;
+    nSinks = m_nSinks;
     m_txp = txp;
     m_CSVfileName = CSVfileName;
 
@@ -385,7 +391,7 @@ RoutingExperiment::Run(int nSinks, double txp, std::string CSVfileName)
         temp.Stop(Seconds(TotalTime));
     }
 
-    std::stringstream ss;
+   std::stringstream ss;
     ss << nWifis;
     std::string nodes = ss.str();
 
@@ -411,9 +417,13 @@ RoutingExperiment::Run(int nSinks, double txp, std::string CSVfileName)
     AsciiTraceHelper ascii;
     MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(tr_name + ".mob"));
 
-    // Ptr<FlowMonitor> flowmon;
-    // FlowMonitorHelper flowmonHelper;
-    // flowmon = flowmonHelper.InstallAll();
+    Ptr<FlowMonitor> flowmon;
+    FlowMonitorHelper flowmonHelper;
+    NodeContainer flowNodes;
+    flowNodes.Add(adhocNodes.Get(0));
+    flowNodes.Add(adhocNodes.Get(1));
+    //flowmon = flowmonHelper.Install(flowNodes);
+    flowmon = flowmonHelper.InstallAll();
 
     NS_LOG_INFO("Run Simulation.");
 
@@ -422,7 +432,8 @@ RoutingExperiment::Run(int nSinks, double txp, std::string CSVfileName)
     Simulator::Stop(Seconds(TotalTime));
     Simulator::Run();
 
-    // flowmon->SerializeToXmlFile(tr_name + ".flowmon", false, false);
-
+    flowmon->SerializeToXmlFile(tr_name + ".flowmon", false, false);
     Simulator::Destroy();
+
+    std::cout << "Total packets received " << totPacketsReceived << std::endl;
 }
