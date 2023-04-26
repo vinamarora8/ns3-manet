@@ -110,7 +110,7 @@ class RoutingExperiment
      */
     std::string CommandSetup(int argc, char** argv);
 
-    void WriteSimState(void);
+    void WriteSimState();
 
   private:
     /**
@@ -200,14 +200,24 @@ Vector getNodePosition(Ptr<Node> n)
 
 void RoutingExperiment::WriteSimState()
 {
+    Simulator::Schedule(Seconds(1.0), &RoutingExperiment::WriteSimState, this);
+
+    double time = Simulator::Now().GetSeconds();
+    if (time < 100)
+    {
+        return;
+    }
+
     int numNodes = adhocNodes.GetN();
 
     std::ofstream outfile(stateFname, std::ios_base::app);
-    outfile << "TIME: " << Simulator::Now().GetSeconds() << std::endl;
+    outfile << "TIME " << time << std::endl;
+    outfile << "NUM_NODES " << numNodes << std::endl;
+    outfile << "POSITIONS" << std::endl;
     for (int i = 0; i < numNodes; i++)
     {
         Vector pos = getNodePosition(adhocNodes.Get(i));
-        outfile << i << " " << pos.x << pos.y << pos.z << std::endl;
+        outfile << i << " " << pos.x << " " << pos.y << " " << pos.z << std::endl;
     }
     outfile.close();
 }
@@ -215,7 +225,7 @@ void RoutingExperiment::WriteSimState()
 void
 RoutingExperiment::CheckThroughput()
 {
-    WriteSimState();
+    //WriteSimState();
     double kbs = (bytesTotal * 8.0) / 1000;
     bytesTotal = 0;
 
@@ -293,7 +303,6 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     std::string rate("2048bps");
     std::string phyMode("DsssRate11Mbps");
     std::string tr_name("manet-routing-compare");
-    int nodeSpeed = 20; // in m/s
     int nodePause = 0;  // in s
     m_protocolName = "protocol";
 
@@ -341,9 +350,9 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     streamIndex += taPositionAlloc->AssignStreams(streamIndex);
 
     std::stringstream ssSpeed;
-    ssSpeed << "ns3::UniformRandomVariable[Min=0.0|Max=" << nodeSpeed << "]";
+    ssSpeed << "ns3::UniformRandomVariable[Min=10.0|Max=20.0]";
     std::stringstream ssPause;
-    ssPause << "ns3::ConstantRandomVariable[Constant=" << nodePause << "]";
+    ssPause << "ns3::UniformRandomVariable[Min=0.0|Max=10.0]";
     mobilityAdhoc.SetMobilityModel("ns3::RandomWaypointMobilityModel",
                                    "Speed",
                                    StringValue(ssSpeed.str()),
@@ -419,17 +428,9 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
         temp.Stop(Seconds(TotalTime));
     }
 
-   std::stringstream ss;
+    std::stringstream ss;
     ss << nWifis;
     std::string nodes = ss.str();
-
-    std::stringstream ss2;
-    ss2 << nodeSpeed;
-    std::string sNodeSpeed = ss2.str();
-
-    std::stringstream ss3;
-    ss3 << nodePause;
-    std::string sNodePause = ss3.str();
 
     std::stringstream ss4;
     ss4 << rate;
@@ -452,6 +453,7 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     NS_LOG_INFO("Run Simulation.");
 
     CheckThroughput();
+    WriteSimState();
 
     Simulator::Stop(Seconds(TotalTime));
     Simulator::Run();
