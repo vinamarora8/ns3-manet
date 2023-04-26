@@ -99,7 +99,7 @@ class RoutingExperiment
      * \param txp The Tx power.
      * \param CSVfileName The output CSV filename.
      */
-    void Run(int nSinks, double txp, std::string CSVfileName);
+    void Run(double txp, std::string CSVfileName);
     // static void SetMACParam (ns3::NetDeviceContainer & devices,
     //                                  int slotDistance);
     /**
@@ -135,6 +135,7 @@ class RoutingExperiment
 
     std::string m_CSVfileName;  //!< CSV filename.
     int m_nSinks;               //!< Number of sink nodes.
+    int m_nWifi;
     std::string m_protocolName; //!< Protocol name.
     double m_txp;               //!< Tx power.
     bool m_traceMobility;       //!< Enavle mobility tracing.
@@ -147,6 +148,7 @@ RoutingExperiment::RoutingExperiment()
       packetsReceived(0),
       totPacketsReceived(0),
       m_CSVfileName("manet-routing.output.csv"),
+      m_nWifi(50),
       m_traceMobility(false),
       m_protocol(2) // AODV
 {
@@ -221,6 +223,7 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
     cmd.AddValue("traceMobility", "Enable mobility tracing", m_traceMobility);
     cmd.AddValue("protocol", "1=OLSR;2=AODV;3=DSDV;4=DSR", m_protocol);
     cmd.AddValue("nSinks", "Number of sink nodes", m_nSinks);
+    cmd.AddValue("nWifi", "Total number of nodes", m_nWifi);
     cmd.Parse(argc, argv);
     return m_CSVfileName;
 }
@@ -241,24 +244,21 @@ main(int argc, char* argv[])
         << "TransmissionPower" << std::endl;
     out.close();
 
-    int nSinks = 3;
     double txp = 7.5;
 
-    experiment.Run(nSinks, txp, CSVfileName);
+    experiment.Run(txp, CSVfileName);
 
     return 0;
 }
 
 void
-RoutingExperiment::Run(int nSinks, double txp, std::string CSVfileName)
+RoutingExperiment::Run(double txp, std::string CSVfileName)
 {
     Packet::EnablePrinting();
-    //m_nSinks = nSinks;
-    nSinks = m_nSinks;
     m_txp = txp;
     m_CSVfileName = CSVfileName;
 
-    int nWifis = 50;
+    int nWifis = m_nWifi;
 
     double TotalTime = 200.0;
     std::string rate("2048bps");
@@ -378,7 +378,7 @@ RoutingExperiment::Run(int nSinks, double txp, std::string CSVfileName)
     onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
     onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
 
-    for (int i = 0; i < nSinks; i++)
+    for (int i = 0; i < m_nSinks; i++)
     {
         Ptr<Socket> sink = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
 
@@ -386,7 +386,7 @@ RoutingExperiment::Run(int nSinks, double txp, std::string CSVfileName)
         onoff1.SetAttribute("Remote", remoteAddress);
 
         Ptr<UniformRandomVariable> var = CreateObject<UniformRandomVariable>();
-        ApplicationContainer temp = onoff1.Install(adhocNodes.Get(i + nSinks));
+        ApplicationContainer temp = onoff1.Install(adhocNodes.Get(i + m_nSinks));
         temp.Start(Seconds(var->GetValue(100.0, 101.0)));
         temp.Stop(Seconds(TotalTime));
     }

@@ -14,10 +14,12 @@ def prep_stats(fname):
             flowstats = child
         if child.tag == "Ipv4FlowClassifier":
             flowclassifier = child
+    assert(flowstats is not None)
+    assert(flowclassifier is not None)
 
     stats = {}
     for child in flowstats:
-        attribs = child.attrib
+        attribs = dict(child.attrib)
 
         flowId = int(attribs['flowId'])
         del attribs['flowId']
@@ -89,15 +91,24 @@ def averageDelay(stats, cond=lambda v: True):
 
 if __name__ == "__main__":
     import sys, os
-    fname = sys.argv[1]
+
+    cmd = f'./ns3 run "scratch/project/manet-routing-compare.cc --nSinks={sys.argv[1]}"'
+    print(cmd)
+    os.system(cmd)
+
+    fname = 'manet-routing-compare.flowmon'
     stats = prep_stats(fname)
     cond = lambda v: v['txPackets'] > 300
     print_stats(stats, cond)
-    print('Loss Rate', lossRate(stats, cond))
-    print('Average Delay(s)', averageDelay(stats, cond))
+    loss_rate = lossRate(stats, cond)
+    avg_delay = averageDelay(stats, cond)
+    control_overhead = controlOverhead(stats, cond)
+
+    print('Loss Rate', loss_rate)
+    print('Average Delay(s)', avg_delay)
     print('Rx Packets', totRxPackets(stats, cond))
     print('Control Rx Packets', controlPackets(stats, cond))
-    print('Control Overhead', controlOverhead(stats, cond))
+    print('Control Overhead', control_overhead)
 
     #pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint(stats[1])
