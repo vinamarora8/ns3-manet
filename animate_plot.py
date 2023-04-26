@@ -46,6 +46,7 @@ with open(state_fname, 'r') as file:
             i+=1
 
 time_list = np.sort(list(states.keys()))
+throughput_list = [states[t]['throughput'] for t in time_list]
     
 x = []
 y = []
@@ -93,7 +94,7 @@ def animate(i):
 
     ax.set_xlim(0, 300)
     ax.set_ylim(0, 1500)
-    ax.set_title(f"Time: {curr_time}s, Throughput: {states[curr_time]['throughput']:.2f}KBPS")
+    ax.set_title(f"$\\bf{{{r.type}}}$\nTime: {curr_time}s, Throughput: {states[curr_time]['throughput']:.2f}KBPS")
 
 ani = FuncAnimation(fig, animate, frames=len(time_list), interval=100, repeat=False)
 plt.show()

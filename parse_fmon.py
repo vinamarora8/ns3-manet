@@ -88,8 +88,8 @@ def averageDelay(stats, cond=lambda v: True):
         totDelay += v['delaySum']
     return totDelay / totRxPackets
 
-def run(nSinks, nWifi):
-    cmd = f'./ns3 run "scratch/project/manet-routing-compare.cc --nSinks={nSinks} --nWifi={nWifi}"'
+def run(nSinks, nWifi, protocol):
+    cmd = f'./ns3 run "scratch/project/manet-routing-compare.cc --nSinks={nSinks} --nWifi={nWifi} --protocol={protocol}"'
     print(cmd)
     os.system(cmd)
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     import sys, os
 
 
-    stats = run(sys.argv[1], sys.argv[2])
+    stats = run(sys.argv[1], sys.argv[2], sys.argv[3])
     cond = lambda v: v['txPackets'] > 100
     print_stats(stats, cond)
     loss_rate = lossRate(stats, cond)

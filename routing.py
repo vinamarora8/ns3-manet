@@ -28,6 +28,22 @@ class Routing():
         self.time = time
 
         with open(fname, 'r') as f:
+            line = ""
+            for i in range(10):
+                line += f.readline()
+
+        if 'AODV' in line:
+            self.type = 'AODV'
+        elif 'OLSR' in line:
+            self.type = 'OLSR'
+        else:
+            raise NotImplementedError
+
+        self.populate_routes(numNodes, fname, time)
+
+    def populate_routes(self, numNodes, fname, time):
+
+        with open(fname, 'r') as f:
             lines = [x.strip() for x in f.readlines()]
 
         i = 0
@@ -54,11 +70,9 @@ class Routing():
                 split = lines[i].split()
                 i+=1
                 
-                if split[3] == 'IN_SEARCH':
-                    continue
-
-                if split[3] == 'DOWN':
-                    continue
+                if self.type == 'AODV':
+                    if split[3] != 'UP':
+                        continue
 
                 dest = self.ip_to_node(split[0])
                 gate = self.ip_to_node(split[1])
@@ -71,7 +85,7 @@ class Routing():
                         'hops':hops
                     }
 
-            while i < len(lines) and len(lines[i]) == 0:
+            while i < len(lines) and not lines[i].startswith('Node'):
                 i+=1
 
         self.lastline = i
