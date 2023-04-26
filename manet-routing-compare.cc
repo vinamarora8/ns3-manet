@@ -110,6 +110,8 @@ class RoutingExperiment
      */
     std::string CommandSetup(int argc, char** argv);
 
+    void WriteSimState();
+
   private:
     /**
      * Setup the receiving socket in a Sink Node.
@@ -140,6 +142,9 @@ class RoutingExperiment
     double m_txp;               //!< Tx power.
     bool m_traceMobility;       //!< Enavle mobility tracing.
     uint32_t m_protocol;        //!< Protocol type.
+    NodeContainer adhocNodes;
+    std::string stateFname;
+    double kbs;
 };
 
 RoutingExperiment::RoutingExperiment()
@@ -150,7 +155,9 @@ RoutingExperiment::RoutingExperiment()
       m_CSVfileName("manet-routing.output.csv"),
       m_nWifi(50),
       m_traceMobility(false),
-      m_protocol(2) // AODV
+      m_protocol(2), // AODV
+      stateFname("manet-state.txt"),
+      kbs(0.0)
 {
 }
 
@@ -187,10 +194,44 @@ RoutingExperiment::ReceivePacket(Ptr<Socket> socket)
     }
 }
 
+Vector getNodePosition(Ptr<Node> n)
+{
+    return n->GetObject<MobilityModel>()->GetPosition();
+}
+
+
+void RoutingExperiment::WriteSimState()
+{
+    Simulator::Schedule(Seconds(1.0), &RoutingExperiment::WriteSimState, this);
+
+    double time = Simulator::Now().GetSeconds();
+    if (time < 100)
+    {
+        return;
+    }
+
+    int numNodes = adhocNodes.GetN();
+
+    std::ofstream outfile(stateFname, std::ios_base::app);
+    outfile << "TIME " << time << std::endl;
+    outfile << "NUM_NODES " << numNodes << std::endl;
+    outfile << "NUM_SINKS " << m_nSinks << std::endl;
+    outfile << "THROUGHPUT " << kbs << std::endl;
+    outfile << "POSITIONS" << std::endl;
+    for (int i = 0; i < numNodes; i++)
+    {
+        Vector pos = getNodePosition(adhocNodes.Get(i));
+        outfile << i << " " << pos.x << " " << pos.y << " " << pos.z << std::endl;
+    }
+    outfile.close();
+}
+
+
 void
 RoutingExperiment::CheckThroughput()
 {
-    double kbs = (bytesTotal * 8.0) / 1000;
+    //WriteSimState();
+    kbs = (bytesTotal * 8.0) / 1000;
     bytesTotal = 0;
 
     std::ofstream out(m_CSVfileName, std::ios::app);
@@ -225,6 +266,9 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
     cmd.AddValue("nSinks", "Number of sink nodes", m_nSinks);
     cmd.AddValue("nWifi", "Total number of nodes", m_nWifi);
     cmd.Parse(argc, argv);
+
+    std::ofstream outfile(stateFname, std::ios_base::out);
+    outfile.close();
     return m_CSVfileName;
 }
 
@@ -244,7 +288,7 @@ main(int argc, char* argv[])
         << "TransmissionPower" << std::endl;
     out.close();
 
-    double txp = 7.5;
+    double txp = 2*7.5;
 
     experiment.Run(txp, CSVfileName);
 
@@ -264,8 +308,6 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     std::string rate("2048bps");
     std::string phyMode("DsssRate11Mbps");
     std::string tr_name("manet-routing-compare");
-    int nodeSpeed = 20; // in m/s
-    int nodePause = 0;  // in s
     m_protocolName = "protocol";
 
     Config::SetDefault("ns3::OnOffApplication::PacketSize", StringValue("64"));
@@ -274,7 +316,6 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     // Set Non-unicastMode rate to unicast mode
     Config::SetDefault("ns3::WifiRemoteStationManager::NonUnicastMode", StringValue(phyMode));
 
-    NodeContainer adhocNodes;
     adhocNodes.Create(nWifis);
 
     // setting up wifi phy and channel using helpers
@@ -306,16 +347,16 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
 
     ObjectFactory pos;
     pos.SetTypeId("ns3::RandomRectanglePositionAllocator");
-    pos.Set("X", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=300.0]"));
-    pos.Set("Y", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1500.0]"));
+    pos.Set("X", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1000.0]"));
+    pos.Set("Y", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1000.0]"));
 
     Ptr<PositionAllocator> taPositionAlloc = pos.Create()->GetObject<PositionAllocator>();
     streamIndex += taPositionAlloc->AssignStreams(streamIndex);
 
     std::stringstream ssSpeed;
-    ssSpeed << "ns3::UniformRandomVariable[Min=0.0|Max=" << nodeSpeed << "]";
+    ssSpeed << "ns3::UniformRandomVariable[Min=10.0|Max=20.0]";
     std::stringstream ssPause;
-    ssPause << "ns3::ConstantRandomVariable[Constant=" << nodePause << "]";
+    ssPause << "ns3::UniformRandomVariable[Min=0.0|Max=20.0]";
     mobilityAdhoc.SetMobilityModel("ns3::RandomWaypointMobilityModel",
                                    "Speed",
                                    StringValue(ssSpeed.str()),
@@ -367,6 +408,7 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
         dsrMain.Install(dsr, adhocNodes);
     }
 
+
     NS_LOG_INFO("assigning ip address");
 
     Ipv4AddressHelper addressAdhoc;
@@ -391,17 +433,9 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
         temp.Stop(Seconds(TotalTime));
     }
 
-   std::stringstream ss;
+    std::stringstream ss;
     ss << nWifis;
     std::string nodes = ss.str();
-
-    std::stringstream ss2;
-    ss2 << nodeSpeed;
-    std::string sNodeSpeed = ss2.str();
-
-    std::stringstream ss3;
-    ss3 << nodePause;
-    std::string sNodePause = ss3.str();
 
     std::stringstream ss4;
     ss4 << rate;
@@ -419,17 +453,20 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
 
     Ptr<FlowMonitor> flowmon;
     FlowMonitorHelper flowmonHelper;
-    NodeContainer flowNodes;
-    flowNodes.Add(adhocNodes.Get(0));
-    flowNodes.Add(adhocNodes.Get(1));
-    //flowmon = flowmonHelper.Install(flowNodes);
     flowmon = flowmonHelper.InstallAll();
 
     NS_LOG_INFO("Run Simulation.");
 
     CheckThroughput();
+    WriteSimState();
 
-    Simulator::Stop(Seconds(TotalTime));
+    Simulator::Stop(Seconds(99));
+    Simulator::Run();
+
+    Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper>("manet-rtable.txt", std::ios::out);
+    list.PrintRoutingTableAllEvery(Seconds(1.0), routingStream);
+
+    Simulator::Stop(Seconds(TotalTime - 101));
     Simulator::Run();
 
     flowmon->SerializeToXmlFile(tr_name + ".flowmon", false, false);
