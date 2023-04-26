@@ -110,6 +110,8 @@ class RoutingExperiment
      */
     std::string CommandSetup(int argc, char** argv);
 
+    void WriteSimState(void);
+
   private:
     /**
      * Setup the receiving socket in a Sink Node.
@@ -140,6 +142,8 @@ class RoutingExperiment
     double m_txp;               //!< Tx power.
     bool m_traceMobility;       //!< Enavle mobility tracing.
     uint32_t m_protocol;        //!< Protocol type.
+    NodeContainer adhocNodes;
+    std::string stateFname;
 };
 
 RoutingExperiment::RoutingExperiment()
@@ -150,7 +154,8 @@ RoutingExperiment::RoutingExperiment()
       m_CSVfileName("manet-routing.output.csv"),
       m_nWifi(50),
       m_traceMobility(false),
-      m_protocol(2) // AODV
+      m_protocol(2), // AODV
+      stateFname("manet-state.txt")
 {
 }
 
@@ -187,9 +192,30 @@ RoutingExperiment::ReceivePacket(Ptr<Socket> socket)
     }
 }
 
+Vector getNodePosition(Ptr<Node> n)
+{
+    return n->GetObject<MobilityModel>()->GetPosition();
+}
+
+
+void RoutingExperiment::WriteSimState()
+{
+    int numNodes = adhocNodes.GetN();
+
+    std::ofstream outfile(stateFname, std::ios_base::app);
+    outfile << "TIME: " << Simulator::Now().GetSeconds() << std::endl;
+    for (int i = 0; i < numNodes; i++)
+    {
+        Vector pos = getNodePosition(adhocNodes.Get(i));
+        outfile << i << " " << pos.x << pos.y << pos.z << std::endl;
+    }
+    outfile.close();
+}
+
 void
 RoutingExperiment::CheckThroughput()
 {
+    WriteSimState();
     double kbs = (bytesTotal * 8.0) / 1000;
     bytesTotal = 0;
 
@@ -225,6 +251,9 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
     cmd.AddValue("nSinks", "Number of sink nodes", m_nSinks);
     cmd.AddValue("nWifi", "Total number of nodes", m_nWifi);
     cmd.Parse(argc, argv);
+
+    std::ofstream outfile(stateFname, std::ios_base::out);
+    outfile.close();
     return m_CSVfileName;
 }
 
@@ -274,7 +303,6 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     // Set Non-unicastMode rate to unicast mode
     Config::SetDefault("ns3::WifiRemoteStationManager::NonUnicastMode", StringValue(phyMode));
 
-    NodeContainer adhocNodes;
     adhocNodes.Create(nWifis);
 
     // setting up wifi phy and channel using helpers
@@ -419,10 +447,6 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
 
     Ptr<FlowMonitor> flowmon;
     FlowMonitorHelper flowmonHelper;
-    NodeContainer flowNodes;
-    flowNodes.Add(adhocNodes.Get(0));
-    flowNodes.Add(adhocNodes.Get(1));
-    //flowmon = flowmonHelper.Install(flowNodes);
     flowmon = flowmonHelper.InstallAll();
 
     NS_LOG_INFO("Run Simulation.");
