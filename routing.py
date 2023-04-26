@@ -36,6 +36,8 @@ class Routing():
             self.type = 'AODV'
         elif 'OLSR' in line:
             self.type = 'OLSR'
+        elif 'DSDV' in line:
+            self.type = 'DSDV'
         else:
             raise NotImplementedError
 
@@ -76,7 +78,11 @@ class Routing():
 
                 dest = self.ip_to_node(split[0])
                 gate = self.ip_to_node(split[1])
-                hops = int(split[-1])
+
+                if self.type in ['AODV', 'OLSR']:
+                    hops = int(split[-1])
+                elif self.type in ['DSDV']:
+                    hops = int(split[3])
                 #print(split, len(lines[i]), dest, gate)
                 if dest is not False and gate is not False:
                     self.routes[nodeid][dest] = {
