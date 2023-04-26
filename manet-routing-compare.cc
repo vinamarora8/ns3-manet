@@ -405,6 +405,7 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
         dsrMain.Install(dsr, adhocNodes);
     }
 
+
     NS_LOG_INFO("assigning ip address");
 
     Ipv4AddressHelper addressAdhoc;
@@ -456,7 +457,13 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     CheckThroughput();
     WriteSimState();
 
-    Simulator::Stop(Seconds(TotalTime));
+    Simulator::Stop(Seconds(99));
+    Simulator::Run();
+
+    Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper>("manet-rtable.txt", std::ios::out);
+    list.PrintRoutingTableAllEvery(Seconds(1.0), routingStream);
+
+    Simulator::Stop(Seconds(TotalTime - 101));
     Simulator::Run();
 
     flowmon->SerializeToXmlFile(tr_name + ".flowmon", false, false);
