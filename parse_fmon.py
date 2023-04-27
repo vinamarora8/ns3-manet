@@ -1,6 +1,7 @@
 import numpy as np
 import xml.etree.ElementTree as ET
 import pprint
+import os
 
 
 def prep_stats(fname):
@@ -62,6 +63,13 @@ def totRxPackets(stats, cond=lambda v: True):
         ans += v['rxPackets']
     return ans
 
+def totUsefulPacket(stats, cond=lambda v: True):
+    ans = 0
+    for k, v in stats.items():
+        if cond(v):
+            ans += v['rxPackets']
+    return ans
+
 
 def controlOverhead(stats, cond=lambda v: True):
     return controlPackets(stats, cond) / totRxPackets(stats, cond)
@@ -88,8 +96,13 @@ def averageDelay(stats, cond=lambda v: True):
         totDelay += v['delaySum']
     return totDelay / totRxPackets
 
-def run(nSinks, nWifi, protocol):
-    cmd = f'./ns3 run "scratch/project/manet-routing-compare.cc --nSinks={nSinks} --nWifi={nWifi} --protocol={protocol}"'
+
+def run(config):
+    cmd = f'./ns3 run "scratch/project/manet-routing-compare.cc'
+    for k, v in config.items():
+        cmd += f' --{k}={v}'
+    cmd += '"'
+
     print(cmd)
     os.system(cmd)
 
@@ -98,22 +111,38 @@ def run(nSinks, nWifi, protocol):
     return stats
 
 
+def get_metrics(fname, nSinks):
+    metrics = {}
+
+    stats = prep_stats(fname)
+    cond = lambda v: v['txPackets'] > 100
+
+    throughput = totUsefulPacket(stats, cond) * 64 * 8 / nSinks / 100
+
+    metrics = {
+        'lossRate' : lossRate(stats, cond),
+        'avgDelay' : averageDelay(stats, cond),
+        'overhead' : controlOverhead(stats, cond),
+        'goodput'  : throughput / 1000, # kbps
+    }
+
+    return metrics
+
+
 if __name__ == "__main__":
     import sys, os
 
+    config = {
+        'nSinks': int(sys.argv[1]),
+        'nWifi' : int(sys.argv[2]),
+        'protocol': int(sys.argv[3]),
+    }
 
-    stats = run(sys.argv[1], sys.argv[2], sys.argv[3])
+    stats = run(config)
     cond = lambda v: v['txPackets'] > 100
     print_stats(stats, cond)
-    loss_rate = lossRate(stats, cond)
-    avg_delay = averageDelay(stats, cond)
-    control_overhead = controlOverhead(stats, cond)
 
-    print('Loss Rate', loss_rate)
-    print('Average Delay(s)', avg_delay)
-    print('Rx Packets', totRxPackets(stats, cond))
-    print('Control Rx Packets', controlPackets(stats, cond))
-    print('Control Overhead', control_overhead)
+    print(get_metrics('manet-routing-compare.flowmon', config['nSinks']))
 
     #pp = pprint.PrettyPrinter(indent=4)
     #pp.pprint(stats[1])
