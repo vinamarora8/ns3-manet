@@ -1,7 +1,7 @@
 import numpy as np
 import xml.etree.ElementTree as ET
-import pprint
 import os
+from parse_trace import get_routing_overhead
 
 
 def prep_stats(fname):
@@ -124,7 +124,7 @@ def get_metrics(fname, nSinks):
     metrics = {
         'Loss Rate' : lossRate(stats, cond),
         'Average Delay' : averageDelay(stats, cond),
-        'overhead' : controlOverhead(stats, cond),
+        'Routing Overhead' : get_routing_overhead(),
         'Goodput'  : throughput / 1000, # kbps
     }
 

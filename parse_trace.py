@@ -15,12 +15,21 @@ def ip_to_node(ipstr):
     return b[3] - 1
 
 
-def get_routing_overhead(protocol: str, trace_fname = 'manet-routing-compare.tr'):
+def get_routing_overhead(trace_fname = 'manet-routing-compare.tr'):
 
-    routing_name = protocol.lower()
 
     with open(trace_fname, 'r') as f:
         lines = f.readlines()
+
+    protocols = ['aodv', 'olsr', 'dsdv']
+    routing_name = None
+    for p in protocols:
+        if p in lines[0]:
+            routing_name = p
+            print(f'Detected routing protocol: {routing_name}')
+
+    if routing_name is None:
+        raise ValueError('Unknown routing protocol', lines[0], p)
 
     def is_tx_line(line):
         return 'State/Tx' in line
@@ -86,4 +95,4 @@ def get_routing_overhead(protocol: str, trace_fname = 'manet-routing-compare.tr'
     return routing_overhead
 
 if __name__ == "__main__":
-    print(get_routing_overhead(sys.argv[1]))
+    print(get_routing_overhead())
