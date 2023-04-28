@@ -53,7 +53,7 @@ def get_routing_overhead(protocol: str, trace_fname = 'manet-routing-compare.tr'
         for l in lines:
             assert(l[0] == 't')
             time = float(l.split()[1])
-            seq = int(l.split('SeqNumber=')[1].split(')')[0])
+            #seq = int(l.split('SeqNumber=')[1].split(')')[0])
             size, source_ip, _, dest_ip = l.split('length: ')[1].split(')')[0].split()
             size = int(size)
             nodeid = int(l.split('NodeList/')[1].split('/')[0])

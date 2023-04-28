@@ -205,7 +205,7 @@ void RoutingExperiment::WriteSimState()
     Simulator::Schedule(Seconds(1.0), &RoutingExperiment::WriteSimState, this);
 
     double time = Simulator::Now().GetSeconds();
-    if (time < 100)
+    if (time < 50)
     {
         return;
     }
@@ -288,7 +288,7 @@ main(int argc, char* argv[])
         << "TransmissionPower" << std::endl;
     out.close();
 
-    double txp = 2*7.5;
+    double txp = 5*7.5;
 
     experiment.Run(txp, CSVfileName);
 
@@ -301,13 +301,16 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     Packet::EnablePrinting();
     m_txp = txp;
     m_CSVfileName = CSVfileName;
-    //LogComponentEnable("OlsrRoutingProtocol", LOG_LEVEL_INFO);
+    double_t pl_exp = 2.75; // Using the best value for gamma from my experiments...
 
     int nWifis = m_nWifi;
 
-    double TotalTime = 200.0;
+    double TotalTime = 150.0;
+    // TODO Rate changes. Looks too low
     std::string rate("2048bps");
-    std::string phyMode("DsssRate11Mbps");
+    // Chose the first Modulation scheme. Need data to see which one would be suited better.
+    std::string phyMode("VhtMcs7"); //;("DsssRate11Mbps");
+				    
     std::string tr_name("manet-routing-compare");
     m_protocolName = "protocol";
 
@@ -315,33 +318,57 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     Config::SetDefault("ns3::OnOffApplication::DataRate", StringValue(rate));
 
     // Set Non-unicastMode rate to unicast mode
-    Config::SetDefault("ns3::WifiRemoteStationManager::NonUnicastMode", StringValue(phyMode));
+  Config::SetDefault("ns3::WifiRemoteStationManager::NonUnicastMode", StringValue(phyMode));
 
     adhocNodes.Create(nWifis);
 
     // setting up wifi phy and channel using helpers
     WifiHelper wifi;
-    wifi.SetStandard(WIFI_STANDARD_80211b);
+    wifi.SetStandard(WIFI_STANDARD_80211ac); // Changing the standard to 802.11 ac as its the latest one
+    //
+    uint32_t rtsThreshold = 65535; 
+
 
     YansWifiPhyHelper wifiPhy;
     YansWifiChannelHelper wifiChannel;
     wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
-    wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
+    wifiChannel.AddPropagationLoss ("ns3::LogDistancePropagationLossModel", "Exponent", DoubleValue(pl_exp));
+    
+  //  wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
+    
     wifiPhy.SetChannel(wifiChannel.Create());
+    // Standard parameters taken from Lab4 asssignemtns
+    std::string frequencyBand;
+    uint32_t chWidth = 20;
+    frequencyBand = "BAND_5GHZ"; // 802.11 ac predominantly works for 5Ghz
+//				 frequencyBand = "BAND_2_4GHZ";
+//wifiPhy.Set("ChannelSettings", StringValue ("{0, 20, BAND_UNSPECIFIED, 0}"));
+    wifiPhy.Set("ChannelSettings",
+                StringValue("{0, " + std::to_string(chWidth) + ", " + frequencyBand + ", 0}"));
 
     // Add a mac and disable rate control
     WifiMacHelper wifiMac;
-    wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager",
-                                 "DataMode",
-                                 StringValue(phyMode),
-                                 "ControlMode",
-                                 StringValue(phyMode));
 
-    wifiPhy.Set("TxPowerStart", DoubleValue(txp));
+    wifi.SetRemoteStationManager("ns3::MinstrelHtWifiManager", "RtsCtsThreshold", UintegerValue(rtsThreshold));
+   // wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager" ,  // MinstrelHtWifiManager
+   //                              "DataMode",
+   //                              StringValue(phyMode),
+   //                              "ControlMode",
+   //                              StringValue(phyMode));
+
+    wifiPhy.Set("TxPowerStart", DoubleValue(txp)); // Worried if this makes sense when we have a minstrel rate algo. But lets see.
     wifiPhy.Set("TxPowerEnd", DoubleValue(txp));
 
     wifiMac.SetType("ns3::AdhocWifiMac");
     NetDeviceContainer adhocDevices = wifi.Install(wifiPhy, wifiMac, adhocNodes);
+    uint32_t BeMaxAmpduSize = 65535;
+    Config::Set("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/BE_MaxAmpduSize",
+                    UintegerValue(BeMaxAmpduSize));
+    bool shortGuardInterval = false; 
+    // Set guard interval
+    Config::Set(
+        "/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/HtConfiguration/ShortGuardIntervalSupported",
+        BooleanValue(shortGuardInterval));
 
     MobilityHelper mobilityAdhoc;
     int64_t streamIndex = 0; // used to get consistent mobility across scenarios
@@ -355,7 +382,7 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     streamIndex += taPositionAlloc->AssignStreams(streamIndex);
 
     std::stringstream ssSpeed;
-    ssSpeed << "ns3::UniformRandomVariable[Min=10.0|Max=20.0]";
+    ssSpeed << "ns3::UniformRandomVariable[Min=15.0|Max=20.0]";
     std::stringstream ssPause;
     ssPause << "ns3::UniformRandomVariable[Min=0.0|Max=20.0]";
     mobilityAdhoc.SetMobilityModel("ns3::RandomWaypointMobilityModel",
@@ -416,11 +443,11 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     addressAdhoc.SetBase("10.1.1.0", "255.255.255.0");
     Ipv4InterfaceContainer adhocInterfaces;
     adhocInterfaces = addressAdhoc.Assign(adhocDevices);
-
+    uint64_t packet_size = 1024;
     OnOffHelper onoff1("ns3::UdpSocketFactory", Address());
     onoff1.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1.0]"));
     onoff1.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.0]"));
-
+    //onoff1.SetConstantRate(DataRate("400Mb/s"), packet_size); //1024 packer size, we might need to vary this parameter.
     for (int i = 0; i < m_nSinks; i++)
     {
         Ptr<Socket> sink = SetupPacketReceive(adhocInterfaces.GetAddress(i), adhocNodes.Get(i));
@@ -430,7 +457,7 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
 
         Ptr<UniformRandomVariable> var = CreateObject<UniformRandomVariable>();
         ApplicationContainer temp = onoff1.Install(adhocNodes.Get(i + m_nSinks));
-        temp.Start(Seconds(var->GetValue(100.0, 101.0)));
+        temp.Start(Seconds(var->GetValue(50.0, 51.0)));
         temp.Stop(Seconds(TotalTime));
     }
 
@@ -447,20 +474,19 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
      tr_name = tr_name + "_" + m_protocolName +"_" + nodes + "nodes_" + sNodeSpeed + "speed_" +
      sNodePause + "pause_" + sRate + "rate";
      */
+    // NS_LOG_INFO("Configure Tracing.");
+    // tr_name = tr_name + "_" + m_protocolName +"_" + nodes + "nodes_" + sNodeSpeed + "speed_" +
+    // sNodePause + "pause_" + sRate + "rate";
 
     AsciiTraceHelper ascii;
     Ptr<OutputStreamWrapper> osw = ascii.CreateFileStream(tr_name + ".tr");
     wifiPhy.EnableAsciiAll(osw);
-
-    /*
-    AsciiTraceHelper ascii;
-    MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(tr_name + ".mob"));
-    */
+    //AsciiTraceHelper ascii;
+    // MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(tr_name + ".mob"));
 
     Ptr<FlowMonitor> flowmon;
     FlowMonitorHelper flowmonHelper;
     flowmon = flowmonHelper.InstallAll();
-    //auto classifier = DynamicCast<Ipv4FlowClassifier>(flowmonHelper.GetClassifier ());
 
     NS_LOG_INFO("Run Simulation.");
 
