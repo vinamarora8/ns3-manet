@@ -368,9 +368,11 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     streamIndex += taPositionAlloc->AssignStreams(streamIndex);
 
     std::stringstream ssSpeed;
-    ssSpeed << "ns3::ConstantRandomVariable[Constant=" << nodeSpeed << "]"; 
-    std::stringstream ssPause;
-    ssPause << "ns3::ConstantRandomVariable[Constant=" << pauseTime << "]"; //"ns3::UniformRandomVariable[Min="<< pauseTime << "|Max=["<<pauseTime <<"]"; //"ns3::UniformRandomVariable[Min=0.0|Max=20.0]";
+    //ssSpeed << "ns3::ConstantRandomVariable[Constant=" << nodeSpeed << "]"; 
+    ssSpeed << "ns3::UniformRandomVariable[Min="<< 0.5*nodeSpeed << "|Max=" << nodeSpeed << "]";
+    std::stringstream ssPause; 
+    //ssPause << "ns3::ConstantRandomVariable[Constant=" << pauseTime << "]"; //"ns3::UniformRandomVariable[Min="<< pauseTime << "|Max=["<<pauseTime <<"]"; //"ns3::UniformRandomVariable[Min=0.0|Max=20.0]";
+    ssPause << "ns3::UniformRandomVariable[Min=0.0|Max="<<pauseTime <<"]"; //"ns3::UniformRandomVariable[Min=0.0|Max=20.0]";
     mobilityAdhoc.SetMobilityModel("ns3::RandomWaypointMobilityModel",
                                    "Speed",
                                    StringValue(ssSpeed.str()),
@@ -466,18 +468,21 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     CheckThroughput();
     WriteSimState();
 
+    // Routing setup time
     Simulator::Stop(Seconds(99));
     Simulator::Run();
 
     Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper>("manet-rtable.txt", std::ios::out);
     list.PrintRoutingTableAllEvery(Seconds(1.0), routingStream);
 
+    // Main simulation
     Simulator::Stop(Seconds(TotalTime - 101));
     Simulator::Run();
 
+    flowmon->CheckForLostPackets();
     flowmon->SerializeToXmlFile(tr_name + ".flowmon", false, false);
     Simulator::Destroy();
 
-    std::cout << "Total packets received " << totPacketsReceived << std::endl;
+    //std::cout << "Total packets received " << totPacketsReceived << std::endl;
 }
 
