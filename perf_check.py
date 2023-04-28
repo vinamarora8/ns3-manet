@@ -15,6 +15,8 @@ protocol_names = ['OLSR', 'AODV', 'DSDV']
 
 metrics = []
 
+averages = 4
+
 for i, prot in enumerate(protocols):
     config = {'protocol': prot}
     config.update(base_config)
@@ -24,13 +26,23 @@ for i, prot in enumerate(protocols):
     for val in moving_param_values:
         config[moving_param_name] = val
 
-        run(config)
-        print(config)
-        m = get_metrics('manet-routing-compare.flowmon', config['nSinks'])
+        m = []
 
-        print(m)
+        for n in range(averages):
+            config['seed'] = n * 1234122
+            run(config)
+            print(config)
+            m.append(get_metrics('manet-routing-compare.flowmon', config['nSinks']))
+            print(m)
 
-        metrics[-1] += [m]
+        m_avg = m[0].copy()
+
+        for k in m_avg:
+            m_avg[k] = np.mean([x[k] for x in m])
+
+        print("Averaged")
+        print(m_avg)
+        metrics[-1] += [m_avg]
 
 metric_names = metrics[0][0].keys()
 

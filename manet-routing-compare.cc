@@ -86,6 +86,7 @@ std::string packetSize = "64";
 int nodeSpeed = 5; // in m/s
 double pauseTime = 3;  // in s
 NS_LOG_COMPONENT_DEFINE("manet");
+int seed = 1234;
 
 /**
  * Routing experiment class.
@@ -250,6 +251,7 @@ RoutingExperiment::CommandSetup(int argc, char** argv)
     cmd.AddValue("pauseTime","pause time for the nodes",pauseTime);
     cmd.AddValue("nodeSpeed","Speed of the nodes while moving in Random WayPoint",nodeSpeed);
     cmd.AddValue("packetSize","Packet Size",packetSize);
+    cmd.AddValue("seed","seed",seed);
     cmd.Parse(argc, argv);
 
     std::ofstream outfile(stateFname, std::ios_base::out);
@@ -283,6 +285,8 @@ main(int argc, char* argv[])
 void
 RoutingExperiment::Run(double txp, std::string CSVfileName)
 {
+    RngSeedManager::SetSeed(seed);
+
     Packet::EnablePrinting();
     m_txp = txp;
     m_CSVfileName = CSVfileName;
