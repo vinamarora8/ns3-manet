@@ -117,13 +117,15 @@ def get_metrics(fname, nSinks):
     stats = prep_stats(fname)
     cond = lambda v: v['txPackets'] > 100
 
+    print(controlPackets(stats, cond))
+
     throughput = totUsefulPacket(stats, cond) * 64 * 8 / nSinks / 100
 
     metrics = {
-        'lossRate' : lossRate(stats, cond),
-        'avgDelay' : averageDelay(stats, cond),
+        'Loss Rate' : lossRate(stats, cond),
+        'Average Delay' : averageDelay(stats, cond),
         'overhead' : controlOverhead(stats, cond),
-        'goodput'  : throughput / 1000, # kbps
+        'Goodput'  : throughput / 1000, # kbps
     }
 
     return metrics

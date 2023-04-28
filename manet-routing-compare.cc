@@ -301,6 +301,7 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     Packet::EnablePrinting();
     m_txp = txp;
     m_CSVfileName = CSVfileName;
+    //LogComponentEnable("OlsrRoutingProtocol", LOG_LEVEL_INFO);
 
     int nWifis = m_nWifi;
 
@@ -441,19 +442,25 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     ss4 << rate;
     std::string sRate = ss4.str();
 
-    // NS_LOG_INFO("Configure Tracing.");
-    // tr_name = tr_name + "_" + m_protocolName +"_" + nodes + "nodes_" + sNodeSpeed + "speed_" +
-    // sNodePause + "pause_" + sRate + "rate";
+    /*
+     NS_LOG_INFO("Configure Tracing.");
+     tr_name = tr_name + "_" + m_protocolName +"_" + nodes + "nodes_" + sNodeSpeed + "speed_" +
+     sNodePause + "pause_" + sRate + "rate";
+     */
 
-    // AsciiTraceHelper ascii;
-    // Ptr<OutputStreamWrapper> osw = ascii.CreateFileStream(tr_name + ".tr");
-    // wifiPhy.EnableAsciiAll(osw);
+    AsciiTraceHelper ascii;
+    Ptr<OutputStreamWrapper> osw = ascii.CreateFileStream(tr_name + ".tr");
+    wifiPhy.EnableAsciiAll(osw);
+
+    /*
     AsciiTraceHelper ascii;
     MobilityHelper::EnableAsciiAll(ascii.CreateFileStream(tr_name + ".mob"));
+    */
 
     Ptr<FlowMonitor> flowmon;
     FlowMonitorHelper flowmonHelper;
     flowmon = flowmonHelper.InstallAll();
+    //auto classifier = DynamicCast<Ipv4FlowClassifier>(flowmonHelper.GetClassifier ());
 
     NS_LOG_INFO("Run Simulation.");
 
@@ -468,6 +475,22 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
 
     Simulator::Stop(Seconds(TotalTime - 101));
     Simulator::Run();
+
+    /*
+    flowmon->CheckForLostPackets (); 
+    auto stats = flowmon->GetFlowStats ();
+    auto rx_bytes{0};
+
+    for (auto stat : stats)
+        {
+          //Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (stat.first);
+          auto t = classifier->FindFlow (stat.first);
+          if (t.protocol == 17  && (t.destinationPort == 698 || t.sourcePort == 698))
+            rx_bytes += stat.second.rxBytes;
+        }
+
+    std::cout << rx_bytes << std::endl;
+    */
 
     flowmon->SerializeToXmlFile(tr_name + ".flowmon", false, false);
     Simulator::Destroy();

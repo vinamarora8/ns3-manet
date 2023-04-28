@@ -2,6 +2,7 @@ from parse_fmon import run, get_metrics
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from parse_trace import get_routing_overhead
 
 base_config = {
     'nWifi' : 20,
@@ -11,7 +12,7 @@ moving_param_name = 'nSinks'
 moving_param_values = [2, 4, 6, 8, 10]
 
 protocols = [1, 2, 3]
-protocol_names = ['AODV', 'OLSR', 'DSDV']
+protocol_names = ['OLSR', 'AODV', 'DSDV']
 
 metrics = []
 
@@ -27,15 +28,19 @@ for i, prot in enumerate(protocols):
         run(config)
         print(config)
         m = get_metrics('manet-routing-compare.flowmon', config['nSinks'])
+
+        del m['overhead']
+        m['Routing Overhead'] = get_routing_overhead(protocol_names[i])
+
         print(m)
 
         metrics[-1] += [m]
 
 metric_names = [
-    'lossRate',
-    'avgDelay',
-    'overhead',
-    'goodput' ,
+    'Loss Rate',
+    'Average Delay',
+    'Routing Overhead',
+    'Goodput' ,
 ]
 
 os.system('mkdir -p plots/')
