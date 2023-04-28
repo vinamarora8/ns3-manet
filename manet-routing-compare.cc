@@ -476,22 +476,6 @@ RoutingExperiment::Run(double txp, std::string CSVfileName)
     Simulator::Stop(Seconds(TotalTime - 101));
     Simulator::Run();
 
-    /*
-    flowmon->CheckForLostPackets (); 
-    auto stats = flowmon->GetFlowStats ();
-    auto rx_bytes{0};
-
-    for (auto stat : stats)
-        {
-          //Ipv4FlowClassifier::FiveTuple t = classifier->FindFlow (stat.first);
-          auto t = classifier->FindFlow (stat.first);
-          if (t.protocol == 17  && (t.destinationPort == 698 || t.sourcePort == 698))
-            rx_bytes += stat.second.rxBytes;
-        }
-
-    std::cout << rx_bytes << std::endl;
-    */
-
     flowmon->SerializeToXmlFile(tr_name + ".flowmon", false, false);
     Simulator::Destroy();
 

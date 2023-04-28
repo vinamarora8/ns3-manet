@@ -145,6 +145,3 @@ if __name__ == "__main__":
     print_stats(stats, cond)
 
     print(get_metrics('manet-routing-compare.flowmon', config['nSinks']))
-
-    #pp = pprint.PrettyPrinter(indent=4)
-    #pp.pprint(stats[1])
