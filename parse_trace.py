@@ -39,7 +39,7 @@ def get_routing_overhead(trace_fname = 'manet-routing-compare.tr'):
         return (routing_name in line)
 
     def is_payload_line(line):
-        return 'Payload' in line
+        return ('Payload' in line) and ('Ipv4Header' in line)
 
     # Parse routing lines
     routing_tx_lines = [x.strip() for x in lines if is_tx_line(x) and is_routing_line(x)]
@@ -76,7 +76,7 @@ def get_routing_overhead(trace_fname = 'manet-routing-compare.tr'):
             })
         return ans
         
-    payload_tx_lines = [x.strip() for x in lines if is_tx_line(x) and is_payload_line(x)]
+    payload_tx_lines = [x.strip() for x in lines if is_tx_line(x) and is_payload_line(x) and not is_routing_line(x)]
     payload_tx_info = parse_payload_lines(payload_tx_lines)
     payload_sources = [x for x in payload_tx_info if x['nodeid'] == x['source_nodeid']]
 
