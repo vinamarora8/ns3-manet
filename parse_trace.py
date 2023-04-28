@@ -16,8 +16,6 @@ def ip_to_node(ipstr):
 
 
 def get_routing_overhead(trace_fname = 'manet-routing-compare.tr'):
-
-
     with open(trace_fname, 'r') as f:
         lines = f.readlines()
 
@@ -82,7 +80,8 @@ def get_routing_overhead(trace_fname = 'manet-routing-compare.tr'):
     payload_tx_info = parse_payload_lines(payload_tx_lines)
     payload_sources = [x for x in payload_tx_info if x['nodeid'] == x['source_nodeid']]
 
-    routing_message_total_size = sum([x['size'] for x in routing_info if x['time'] > 100])
+    min_time = min([x['time'] for x in payload_sources])
+    routing_message_total_size = sum([x['size'] for x in routing_info if x['time'] > min_time])
     payload_sources_total_size = sum([x['size'] for x in payload_sources])
     routing_overhead = routing_message_total_size / payload_sources_total_size
 

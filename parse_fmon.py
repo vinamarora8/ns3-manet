@@ -71,10 +71,6 @@ def totUsefulPacket(stats, cond=lambda v: True):
     return ans
 
 
-def controlOverhead(stats, cond=lambda v: True):
-    return controlPackets(stats, cond) / totRxPackets(stats, cond)
-
-
 def lossRate(stats, cond=lambda v: True):
     loss = 0
     totTxPackets = 0
@@ -111,15 +107,13 @@ def run(config):
     return stats
 
 
-def get_metrics(fname, nSinks):
+def get_metrics(fname, nSinks, time=100):
     metrics = {}
 
     stats = prep_stats(fname)
     cond = lambda v: v['txPackets'] > 100
 
-    print(controlPackets(stats, cond))
-
-    throughput = totUsefulPacket(stats, cond) * 64 * 8 / nSinks / 100
+    throughput = totUsefulPacket(stats, cond) * 64 * 8 / nSinks / time
 
     metrics = {
         'Loss Rate' : lossRate(stats, cond),
