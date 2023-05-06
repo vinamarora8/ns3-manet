@@ -83,10 +83,11 @@ using namespace ns3;
 using namespace dsr;
 
 std::string packetSize = "64";
-int nodeSpeed = 5; // in m/s
+int nodeSpeed = 0; // in m/s
 double pauseTime = 3;  // in s
 NS_LOG_COMPONENT_DEFINE("manet");
 int seed = 1234;
+int offtime = 0.0;
 
 /**
  * Routing experiment class.

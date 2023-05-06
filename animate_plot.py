@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+from matplotlib import animation
 from parse_states import parse_states
 from routing import Routing
 
@@ -62,5 +62,9 @@ def animate(i):
     ax.set_ylim(0, yMax)
     ax.set_title(f"$\\bf{{{r.type}}}$\nTime: {curr_time}s, Throughput: {states[curr_time]['throughput']:.2f}KBPS")
 
-ani = FuncAnimation(fig, animate, frames=len(time_list), interval=100, repeat=False)
+ani = animation.FuncAnimation(fig, animate, frames=len(time_list), interval=100, repeat=False)
+#f = "anim.gif"
+#writergif = animation.PillowWriter(fps=10) 
+#ani.save(f, writer=writergif)
+
 plt.show()

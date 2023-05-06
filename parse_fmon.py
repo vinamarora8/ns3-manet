@@ -26,6 +26,7 @@ def prep_stats(fname):
         del attribs['flowId']
 
         attribs['txPackets'] = int(attribs['txPackets'])
+        attribs['txBytes'] = int(attribs['txBytes'])
         attribs['rxPackets'] = int(attribs['rxPackets'])
         attribs['timesForwarded'] = int(attribs['timesForwarded'])
         attribs['delaySum'] = float(attribs['delaySum'][:-2]) * 1e-9
@@ -36,7 +37,7 @@ def prep_stats(fname):
         flowId = int(attribs['flowId'])
         del attribs['flowId']
         stats[flowId].update(attribs)
-    
+
     return stats
 
 
@@ -111,7 +112,8 @@ def get_metrics(fname, nSinks, time=100):
     metrics = {}
 
     stats = prep_stats(fname)
-    cond = lambda v: v['txPackets'] > 100
+    #cond = lambda v: v['txBytes'] > 1000
+    cond = lambda v: v['destinationPort'] == '9'
 
     throughput = totUsefulPacket(stats, cond) * 64 * 8 / nSinks / time
 
@@ -126,6 +128,7 @@ def get_metrics(fname, nSinks, time=100):
 
 
 if __name__ == "__main__":
+
     import sys, os
 
     config = {
@@ -135,7 +138,7 @@ if __name__ == "__main__":
     }
 
     stats = run(config)
-    cond = lambda v: v['txPackets'] > 100
+    cond = lambda v: v['destinationPort'] == '9'
     print_stats(stats, cond)
 
     print(get_metrics('manet-routing-compare.flowmon', config['nSinks']))
